@@ -91,15 +91,17 @@ const Todo = () => {
     setSelectedTaskIndex(null);
   };
 
-  const handleEdit = (index) => {
-    setInputValue(list[index].title);
-    setTagValue((list[index].tags || []).join(', '));
-    setSelectedTaskIndex(index);
+  const handleEdit = (filteredIndex) => {
+    const originalIndex = list.findIndex(item => item === filteredList[filteredIndex]);
+    setInputValue(list[originalIndex].title);
+    setTagValue((list[originalIndex].tags || []).join(', '));
+    setSelectedTaskIndex(originalIndex);
   };
-
-  const handleDelete = index => {
+  
+  const handleDelete = (filteredIndex) => {
+    const originalIndex = list.findIndex(item => item === filteredList[filteredIndex]);
     setList(prevList => {
-      const temp = prevList.filter((_, itemI) => itemI !== index);
+      const temp = prevList.filter((_, itemI) => itemI !== originalIndex);
       return temp;
     });
     toast.show({
@@ -107,6 +109,7 @@ const Todo = () => {
       status: "success"
     });
   };
+  
 
   const clearAsyncStorage = async () => {
     try {
@@ -125,13 +128,15 @@ const Todo = () => {
     }
   };
 
-  const handleStatusChange = index => {
+  const handleStatusChange = (filteredIndex) => {
+    const originalIndex = list.findIndex(item => item === filteredList[filteredIndex]);
     setList(prevList => {
       const newList = [...prevList];
-      newList[index].isCompleted = !newList[index].isCompleted;
+      newList[originalIndex].isCompleted = !newList[originalIndex].isCompleted;
       return newList;
     });
   };
+  
 
   const handleTagChange = tag => {
     setSelectedTag(tag);
