@@ -4,6 +4,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather, Entypo, MaterialIcons } from "@expo/vector-icons";
 import { LogBox } from 'react-native';
 import Header from "../components/header";
+import TaskList from "../components/TaskList";
+import TagFilter from "../components/TagFilter";
+
 
 const Todo = () => {
   const dayjs = require('dayjs')
@@ -13,16 +16,19 @@ const Todo = () => {
   const [tagValue, setTagValue] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
   const [selectedTaskIndex, setSelectedTaskIndex] = useState(null);
+  const [tags, setTags] = useState([]);
   const toast = useToast();
 
   LogBox.ignoreLogs(['In React 18, SSRProvider is not necessary and is a noop.']);
 
   useEffect(() => {
     loadTodoList();
+    setTags(getUniqueTags(list));
   }, []);
 
   useEffect(() => {
     saveTodoList();
+    setTags(getUniqueTags(list));
   }, [list]);
 
   const loadTodoList = async () => {
@@ -97,7 +103,7 @@ const Todo = () => {
     setTagValue((list[originalIndex].tags || []).join(', '));
     setSelectedTaskIndex(originalIndex);
   };
-  
+
   const handleDelete = (filteredIndex) => {
     const originalIndex = list.findIndex(item => item === filteredList[filteredIndex]);
     setList(prevList => {
@@ -109,7 +115,7 @@ const Todo = () => {
       status: "success"
     });
   };
-  
+
 
   const clearAsyncStorage = async () => {
     try {
@@ -136,7 +142,7 @@ const Todo = () => {
       return newList;
     });
   };
-  
+
 
   const handleTagChange = tag => {
     setSelectedTag(tag);
@@ -145,6 +151,11 @@ const Todo = () => {
   const filteredList = selectedTag
     ? list.filter(item => item.tags && item.tags.includes(selectedTag))
     : list;
+
+  const getUniqueTags = (tasks) => {
+    return Array.from(new Set(tasks.flatMap(item => item.tags || []).filter(tag => tag.trim() !== '')));
+  };
+
 
   return (
     <>
@@ -155,6 +166,7 @@ const Todo = () => {
             {dayjs().format('MMMM D, YYYY')}
           </Heading>
           <VStack space={4}>
+
             <HStack space={2}>
               <Input
                 flex={1}
@@ -181,81 +193,22 @@ const Todo = () => {
                 aria-label="Add Task"
               />
             </HStack>
-            <ScrollView>
-              <Select
-                selectedValue={selectedTag}
-                minWidth={200}
-                placeholder="Filter by Tag"
-                onValueChange={handleTagChange}
-              >
-                <Select.Item label="All" value="" />
-                {Array.from(new Set(list.flatMap(item => item.tags || []).filter(tag => tag.trim() !== ''))).map(tag => (
-                  <Select.Item key={tag} label={tag} value={tag} />
-                ))}
-              </Select>
-            </ScrollView>
-            {list.length > 0 ?
-              <ScrollView h="210" >
-                <VStack space={2}>
-                  {filteredList.map((item, itemI) => (
-                    <HStack
-                      w="100%"
-                      justifyContent="space-between"
-                      alignItems="center"
-                      key={item.title + itemI.toString()}
-                    >
-                      <Checkbox
-                        isChecked={item.isCompleted}
-                        onChange={() => handleStatusChange(itemI)}
-                        value={item.title}
-                        aria-label="Task"
-                      ></Checkbox>
-                      <Text
-                        width="100%"
-                        flexShrink={1}
-                        textAlign="left"
-                        mx="2"
-                        strikeThrough={item.isCompleted}
-                        _light={{
-                          color: item.isCompleted ? "gray.400" : "coolGray.800"
-                        }}
-                        _dark={{
-                          color: item.isCompleted ? "gray.400" : "coolGray.50"
-                        }}
-                        onPress={() => handleStatusChange(itemI)}
-                      >
-                        {item.title}
-                      </Text>
-                      <IconButton
-                        size="sm"
-                        colorScheme="trueGray"
-                        icon={<Icon as={Entypo} name="edit" size="xs" color="trueGray.400" aria-label="Edit Task" />}
-                        onPress={() => handleEdit(itemI)}
-                        aria-label="Edit Task"
-                      />
-                      <IconButton
-                        size="sm"
-                        colorScheme="trueGray"
-                        icon={<Icon as={Entypo} name="minus" size="xs" color="trueGray.400" aria-label="Delete Task" />}
-                        onPress={() => handleDelete(itemI)}
-                        aria-label="Add Task"
-                      />
-                    </HStack>
-                  ))}
-                </VStack>
-              </ScrollView>
-              : <View h="210" alignItems="center" justifyContent="center"><Icon as={MaterialIcons} name="playlist-add" size={48} color="trueGray.300" opacity={0.2} aria-label="Empty Task List" />
-              <Text color="trueGray.300" >The Task List Is Empty.</Text><Text fontSize="xs" color="trueGray.300" opacity={0.3}>Please Add A New Task</Text></View>}
-            {list.length > 0 && <Button
-              onPress={clearAsyncStorage}
-              size="sm"
-              colorScheme="danger"
-              mt={2}
-            >
-              Clear All Tasks
-            </Button>}
-          </VStack>
 
+            <TagFilter selectedTag={selectedTag} handleTagChange={handleTagChange} tags={tags} />
+
+            <TaskList
+              list={filteredList}
+              handleStatusChange={handleStatusChange}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+            />
+
+            {list.length > 0 && (
+              <Button onPress={clearAsyncStorage} size="sm" colorScheme="danger" mt={2}>
+                Clear All Tasks
+              </Button>
+            )}
+          </VStack>
         </Box>
       </Center>
     </>
